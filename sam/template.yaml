@@ -1,0 +1,93 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: ''
+
+Globals:
+  Function:
+    Runtime: python3.9
+
+Parameters:
+  AcmCertificateArn:
+    Type: String
+
+  Domain:
+    Type: String
+
+Resources:
+
+  BucketWeb:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      WebsiteConfiguration:
+        ErrorDocument: index.html
+        IndexDocument: index.html
+
+  BucketWebPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketWeb
+      PolicyDocument:
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Resource: !Sub 'arn:aws:s3:::${BucketWeb}/*'
+            Principal:
+              CanonicalUser: !GetAtt BucketWebOAI.S3CanonicalUserId
+  CDN:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref Domain
+        Comment: Web site
+        DefaultCacheBehavior:
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          # DefaultTTL: Double
+          # FieldLevelEncryptionId: String
+          ForwardedValues:
+            # Cookies:
+            # Headers:
+            QueryString: false
+            # QueryStringCacheKeys:
+          # LambdaFunctionAssociations:
+          # MaxTTL: Double
+          # MinTTL: Double
+          # SmoothStreaming: Boolean
+          TargetOriginId: web
+          # TrustedSigners:
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        # IPV6Enabled: boolean-value
+        Origins:
+          - Id: web
+            # ConnectionTimeout: Integer
+            # ConnectionAttempts: Integer
+            # CustomOriginConfig:
+            DomainName: !Sub '${BucketWeb}.s3.amazonaws.com'
+            # OriginPath:
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${BucketWebOAI}'
+        PriceClass: PriceClass_200
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AcmCertificateArn
+          # CloudFrontDefaultCertificate: Boolean
+          # IamCertificateId: String
+          # MinimumProtocolVersion: String
+          SslSupportMethod: sni-only
+      # Tags:
+
+  BucketWebOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Ref Domain
+
+Outputs:
+  Bucket:
+    Value: !Ref BucketWeb
+
