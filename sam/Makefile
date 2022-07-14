@@ -1,5 +1,6 @@
 .PHONY: deploy
-deploy: lint
+deploy:
+	sam build
 	sam deploy
 
 .PHONY: lint

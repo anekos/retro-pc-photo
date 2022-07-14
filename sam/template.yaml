@@ -35,6 +35,7 @@ Resources:
             Resource: !Sub 'arn:aws:s3:::${BucketWeb}/*'
             Principal:
               CanonicalUser: !GetAtt BucketWebOAI.S3CanonicalUserId
+
   CDN:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -87,7 +88,59 @@ Resources:
       CloudFrontOriginAccessIdentityConfig:
         Comment: !Ref Domain
 
+  UploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: upload.lambda_handler
+      Runtime: python3.9
+      CodeUri: src
+      Environment:
+        Variables:
+          BucketWeb: !Ref BucketWeb
+      Role: !GetAtt UploadFunctionRole.Arn
+      Timeout: 5
+
+  UploadFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunctionUrl'
+      FunctionName: !GetAtt UploadFunction.Arn
+      Principal: '*'
+      FunctionUrlAuthType: NONE
+
+  UploadFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: UploadFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: VisualEditor0
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::${BucketWeb}/u/*'
+                  - !Sub 'arn:aws:s3:::gyazo.snca.net/rpp/*'
+
+  UploadFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      AuthType: NONE
+      TargetFunctionArn: !GetAtt UploadFunction.Arn
+
 Outputs:
   Bucket:
     Value: !Ref BucketWeb
-
+  UploadFunctionUrl:
+    Value: !GetAtt UploadFunctionUrl.FunctionUrl

@@ -15,6 +15,7 @@
       <h2 id="nyan"></h2>
       <img id="output">
       <h2 id="message"></h2>
+      <button id="upload" style="display: none; font-size: 1.5rem;">アップロードして、🐦ツイート🐦する</button>
     </div>
 
     <hr />
@@ -61,8 +62,28 @@
           const img = document.querySelector('#output');
           img.src = URL.createObjectURL(e.data);
           img.style = 'display: block';
+          document.querySelector('#upload').style.display = 'block';
         }
       });
+
+      document.querySelector('#upload').addEventListener('click', () => {
+        const img = document.querySelector('#output');
+        const canvas = document.createElement('canvas');
+        canvas.width  = img.width;
+        canvas.height = img.height;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const url = canvas.toBlob(async (blob) => {
+          const resp = await fetch(
+            'https://kbk4bt2g54ynbdihontjengusq0ihbxy.lambda-url.ap-northeast-1.on.aws/',
+            {method: 'POST', cache: 'no-cache', body: blob}
+          );
+          const result = await resp.json();
+          window.open(`https://twitter.com/share?text=${encodeURIComponent('https://rpp.snca.net/ 📸 ')}&url=${result.url}&hashtags=${encodeURIComponent('レトロPCゲームみたいな写真')}`);
+        }, 'image/png');
+        document.querySelector('#upload').style.display = 'none';
+      });
+
 
       document.querySelector('#file').addEventListener('change', (e) => {
         console.log(e, e.target.files[0]);
