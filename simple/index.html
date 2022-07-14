@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name="viewport" content="width=360">
+    <title>レトロPCゲームみたいな画像にするよ</title>
+  </head>
+  <body>
+    <div>
+      <h3>ファイル選択してね↓</h3>
+      <input type="file" id="file">
+    </div>
+
+    <div>
+      <h2 id="nyan"></h2>
+      <img id="output">
+      <h2 id="message"></h2>
+    </div>
+
+    <hr />
+
+    このアプリ(?)は↓の記事を元に作りました。
+
+    <hr />
+
+    <div class="h-full overflow-auto border border-th-accent w-full md:ml-1 md:w-1/2">
+      <div class="markdown md:p-2">
+        <div>
+          <h3>
+            <a href="#レトロpcゲームみたいな写真が撮りたい" aria-hidden="true" class="anchor" id="mkd-レトロpcゲームみたいな写真が撮りたい" rel=" noopener noreferrer">
+            </a>
+            <a href="https://dailyportalz.jp/kiji/retro_PC_game-mitaina-shashin" rel=" noopener noreferrer">
+              レトロPCゲームみたいな写真が撮りたい
+            </a>
+          </h3>
+          <p>
+            <a href="https://dailyportalz.jp/kiji/retro_PC_game-mitaina-shashin" rel=" noopener noreferrer">
+              <img width=320 src="https://img.dailyportalz.jp/1316/5749/6560/top.png" alt="Image">
+            </a>
+          </p>
+          <p>
+          黎明期のPC（PC-8801など）は、画面に8色しか表示できないのが一般的であった。当時の雰囲気を、現代の写真で再現できないだろうか。 (斎藤公輔（NEKOPLA）)
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <hr />
+
+    実装には <a href="https://github.com/jsscheller/imagemagick-wasm">https://github.com/jsscheller/imagemagick-wasm</a> を使ってます。
+
+    <script type='module'>
+      const worker = new Worker('worker.js', {type: 'module'});
+      worker.addEventListener('message', (e) => {
+        if (e.data === null) {
+          const img = document.querySelector('#output');
+          img.style = 'display: none';
+        } else if (typeof e.data === 'string') {
+          document.querySelector('#message').textContent = e.data;
+        } else {
+          const img = document.querySelector('#output');
+          img.src = URL.createObjectURL(e.data);
+          img.style = 'display: block';
+        }
+      });
+
+      document.querySelector('#file').addEventListener('change', (e) => {
+        console.log(e, e.target.files[0]);
+        worker.postMessage([e.target.files[0]]);
+      });
+    </script>
+
+  </body>
+</html>
