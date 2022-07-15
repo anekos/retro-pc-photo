@@ -16,6 +16,8 @@
       <img id="output">
       <h2 id="message"></h2>
       <button id="upload" style="display: none; font-size: 1.5rem;">アップロードして、🐦ツイート🐦する</button>
+      <a id="tweet-link" style="display: none; font-size: 1.5rem;" rel="noopener noreferrer" target="_blank">Ugh</a>
+      <a id="image-link" style="display: none; font-size: 1.5rem;" rel="noopener noreferrer" target="_blank">Ugh</a>
     </div>
 
     <hr />
@@ -28,14 +30,14 @@
       <div class="markdown md:p-2">
         <div>
           <h3>
-            <a href="#レトロpcゲームみたいな写真が撮りたい" aria-hidden="true" class="anchor" id="mkd-レトロpcゲームみたいな写真が撮りたい" rel=" noopener noreferrer">
+            <a href="#レトロpcゲームみたいな写真が撮りたい" aria-hidden="true" class="anchor" id="mkd-レトロpcゲームみたいな写真が撮りたい" rel="noopener noreferrer" target="_blank">
             </a>
-            <a href="https://dailyportalz.jp/kiji/retro_PC_game-mitaina-shashin" rel=" noopener noreferrer">
+            <a href="https://dailyportalz.jp/kiji/retro_PC_game-mitaina-shashin" rel="noopener noreferrer" target="_blank">
               レトロPCゲームみたいな写真が撮りたい
             </a>
           </h3>
           <p>
-            <a href="https://dailyportalz.jp/kiji/retro_PC_game-mitaina-shashin" rel=" noopener noreferrer">
+            <a href="https://dailyportalz.jp/kiji/retro_PC_game-mitaina-shashin" rel="noopener noreferrer" target="_blank">
               <img width=320 src="https://img.dailyportalz.jp/1316/5749/6560/top.png" alt="Image">
             </a>
           </p>
@@ -51,23 +53,27 @@
     実装には <a href="https://github.com/jsscheller/imagemagick-wasm">https://github.com/jsscheller/imagemagick-wasm</a> を使ってます。
 
     <script type='module'>
+      const tweetLink = document.querySelector('#tweet-link');
+      const imageLink = document.querySelector('#image-link');
+      const img = document.querySelector('#output');
+      const uploadButton = document.querySelector('#upload');
+      const messageLabel = document.querySelector('#message');
+
       const worker = new Worker('worker.js', {type: 'module'});
+
       worker.addEventListener('message', (e) => {
         if (e.data === null) {
-          const img = document.querySelector('#output');
           img.style = 'display: none';
         } else if (typeof e.data === 'string') {
-          document.querySelector('#message').textContent = e.data;
+          messageLabel.textContent = e.data;
         } else {
-          const img = document.querySelector('#output');
           img.src = URL.createObjectURL(e.data);
           img.style = 'display: block';
-          document.querySelector('#upload').style.display = 'block';
+          uploadButton.style.display = 'block';
         }
       });
 
-      document.querySelector('#upload').addEventListener('click', () => {
-        const img = document.querySelector('#output');
+      uploadButton.addEventListener('click', () => {
         const canvas = document.createElement('canvas');
         canvas.width  = img.width;
         canvas.height = img.height;
@@ -78,15 +84,32 @@
             'https://kbk4bt2g54ynbdihontjengusq0ihbxy.lambda-url.ap-northeast-1.on.aws/',
             {method: 'POST', cache: 'no-cache', body: blob}
           );
+
           const result = await resp.json();
-          window.open(`https://twitter.com/share?text=${encodeURIComponent('https://rpp.snca.net/ 📸 ')}&url=${result.url}&hashtags=${encodeURIComponent('レトロPCゲームみたいな写真')}`);
+          const url = `https://twitter.com/share?text=${encodeURIComponent('https://rpp.snca.net/ 📸 ')}&url=${result.url}&hashtags=${encodeURIComponent('レトロPCゲームみたいな写真')}`
+          messageLabel.textContent = '';
+
+          tweetLink.href = url;
+          tweetLink.style.display = 'block';
+          tweetLink.textContent = '🐦ツイート🐦リンク';
+
+          imageLink.href = result.url;
+          imageLink.style.display = 'block';
+          imageLink.textContent = '📸画像📸リンク';
+
         }, 'image/png');
-        document.querySelector('#upload').style.display = 'none';
+
+        uploadButton.style.display = 'none';
+        messageLabel.textContent = '処理中';
       });
 
 
       document.querySelector('#file').addEventListener('change', (e) => {
         console.log(e, e.target.files[0]);
+
+        tweetLink.style.display = 'none';
+        imageLink.style.display = 'none';
+
         worker.postMessage([e.target.files[0]]);
       });
     </script>

@@ -10,21 +10,24 @@ from PIL import Image
 
 s3_resource = boto3.resource('s3')
 
+Headers = {
+    'Access-Control-Allow-Origin': 'https://rpp.snca.net',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST'
+}
+
 
 def lambda_handler(event: Any, context: Any) -> Any:
-    # print('Received event: ' + json.dumps(event, indent=2))
+    for_dump = {**event}
+    if 'body' in for_dump:
+        for_dump['body'] = f'DUMMY: {len(for_dump)} bytes'
+        print('Received event: ' + json.dumps(for_dump, indent=2))
 
     method = event['requestContext']['http']['method']
     if method == 'OPTIONS':
         return {
             'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Origin': 'https://rpp.snca.net/*',
-
-
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Allow-Methods': 'POST'
-            }
+            'headers': Headers
         }
 
     body = base64.b64decode(event['body'])
@@ -50,7 +53,8 @@ def lambda_handler(event: Any, context: Any) -> Any:
     return {
         'statusCode': 200,
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            **Headers,
         },
         'body': json.dumps({'url': url})
     }
